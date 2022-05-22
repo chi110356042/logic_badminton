@@ -2,4 +2,4 @@
 
 ### Comands to run
 
-`python3 mix.py --model_type deepctrl`
+`python3 newtest.py --model_type deepctrl`
