@@ -31,7 +31,7 @@ from torch.utils.data import DataLoader, TensorDataset
 from torch.distributions.beta import Beta
 from create_dataset import *
 
-from model import RuleEncoder, DataEncoder, Net, NaiveModel, SharedNet, DataonlyNet,lstm_model,bilstm,LSTM_test,BiLSTM_layer
+from model_code import RuleEncoder, DataEncoder, Net, NaiveModel, SharedNet, DataonlyNet,lstm_model,bilstm,LSTM_test,BiLSTM_layer
 
 
 model_info = {'dataonly': {'rule': 0.0},
