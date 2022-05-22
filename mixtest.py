@@ -44,6 +44,7 @@ def main():
   parser.add_argument('--datapath1', type=str, default='data/coordinatebTOKYO1new1201.xls')
   parser.add_argument('--datapath2', type=str, default='data/coordinatebTOKYO2new1202.xls')
   parser.add_argument('--datapath3', type=str, default='data/coordinatebTOKYO3d.xls')
+  parser.add_argument('--datapath4', type=str, default='data/coordinatebHSBC11d.xls')
   parser.add_argument('--device', type=str, default='cpu')
   parser.add_argument('--batch_size', type=int, default=1, help='default: 64')
   parser.add_argument('--model_type', type=str, default='dataonly')
@@ -76,6 +77,7 @@ def main():
   datapath1 = args.datapath1
   datapath2 = args.datapath2
   datapath3 = args.datapath3
+  datapath4 = args.datapath4
   # Load dataset
   '''
   data1 = pd.read_excel(datapath1,'cordination', usecols=["rx1下面的人","rx2下面的人","by1下面的人","by2下面的人","rx1上面的人","rx2上面的人","by1上面的人","by2上面的人"])
@@ -86,22 +88,26 @@ def main():
   data1_new = pd.read_excel(datapath1,'cordination', usecols=["rx1上面的人","rx2上面的人","by1上面的人","by2上面的人"])
   data2_new = pd.read_excel(datapath2,'cordination', usecols=["rx1上面的人","rx2上面的人","by1上面的人","by2上面的人"])
   data3_new = pd.read_excel(datapath3,'cordination', usecols=["rx1上面的人","rx2上面的人","by1上面的人","by2上面的人"])
+  data4_new = pd.read_excel(datapath4,'cordination', usecols=["rx1上面的人","rx2上面的人","by1上面的人","by2上面的人"])
   data1_new = data1_new.dropna()
   data3_new = data3_new.dropna()
   data2_new = data2_new.dropna()
+  data4_new = data4_new.dropna()
 
   label1=pd.read_excel(datapath1,'cordination', usecols=["d"])
   label2=pd.read_excel(datapath2,'cordination', usecols=["d"])
   label3=pd.read_excel(datapath3,'cordination', usecols=["d"])
+  label4=pd.read_excel(datapath4,'cordination', usecols=["d"])
   label1 = label1.dropna()
   label2 = label2.dropna()
   label3 = label3.dropna()
+  label4 = label4.dropna()
   #上下半場合併
   
-  input_data=pd.concat([data1_new, data2_new], ignore_index=True)
-  label_data=pd.concat([label1, label2], ignore_index=True)
-  test_data=data3_new
-  label_test=label3
+  input_data=pd.concat([data1_new, data2_new, data3_new], ignore_index=True)
+  label_data=pd.concat([label1, label2, label3], ignore_index=True)
+  test_data=data4_new
+  label_test=label4
   
   #上下半場未合併
   '''
@@ -188,7 +194,7 @@ def main():
     #criterion=nn.MSELoss()
     criterion=nn.CrossEntropyLoss()
     optimizer=optim.Adam(model.parameters(),lr=0.005)
-    model_name='no_rule1'
+    model_name='no_rule0519'
     saved_filename = '{}.pt'.format(model_name)
     saved_filename =  os.path.join('no_rule_model_file', saved_filename)
 
@@ -359,9 +365,9 @@ def main():
       n=0 
       train_ratio=0
       
-      model_name='mix_0513'
+      model_name='0522model'
       saved_filename = '{}.pt'.format(model_name)
-      saved_filename =  os.path.join('model2_file', saved_filename)
+      saved_filename =  os.path.join('0522', saved_filename)
  
       model.train()
       for epoch in range(1, epochs+1): 
@@ -377,8 +383,10 @@ def main():
         true_cur=0
         c_pp1=0
         c_pp2=0
-        c_tp1=40
-        c_tp2=40
+        c_tp1=0
+        c_tp2=0
+        #c_tp1=60
+        #c_tp2=60
       
        
         for batch_train_x, batch_train_y in train_loader:
@@ -420,25 +428,30 @@ def main():
               c_pp2+=1
           else:
             pass
+          
+          if true_cur==0:
+            if true_int==1:
+              #pred_p1+=1
+              c_tp1+=1
+              #if pred_p1==pred_p2 and pred_p1>21:
+               #   pred_score+=1
+            elif true_int==2:
+              #pred_p2+=1
+              c_tp2+=1
+          else:
+            pass
+
               #if pred_p1==pred_p2 and pred_p2>21:
                #   pred_score+=1
           
           #count true p1,p2
-          '''
-          if true_cur==0:
-            if true_int==1:
-              true_p1+=1
-              c_tp1+=1
-            elif true_int==2:
-              true_p2+=1
-              c_tp2+=1
-          '''
+         
 
           # stable output
           #p1=torch.tensor(p1).float()
           #p2=torch.tensor(p2).float()
           #score=torch.tensor(score).float()
-    
+         
           c_tp1=torch.tensor(c_tp1).float()
           c_tp2=torch.tensor(c_tp2).float()
           c_pp1=torch.tensor(c_pp1).float()
@@ -448,15 +461,14 @@ def main():
           loss_rule = loss_rule_func(c_pp1, c_tp1, c_pp2, c_tp2)
        
           task_loss_count+=1
-         
-          #loss_rule = loss_rule_func(p1, p2, score) 
              
           loss = 1 * alpha * loss_rule + (1 - alpha) * loss_task
           loss.backward()
           optimizer.step()
           pred_cur=pred_int
           true_cur=true_int
-       
+        
+        
         acc=sum(total_acc_arr)/len(total_acc_arr)
         acc_list.append(acc)
         loss2=loss.item()
@@ -470,8 +482,6 @@ def main():
         rule_loss_list.append(loss_rule2)
         n+=1
         n_list.append(n)
-
-        #train_ratio += verification(p1, p2, score, threshold=0.0).item()
       
         if epoch%5==0:
           #print("loss_count: "+str(loss_count))
@@ -537,12 +547,8 @@ def main():
       test_total_acc_arr=[]
       with torch.no_grad():
         for te_x, te_y in test_loader:
-          #te_x=torch.reshape(te_x, (-1, 32))
-          #te_y = te_y.unsqueeze(-1)
           te_y=te_y.squeeze(1)
-          #print("te_y.shape: "+str(te_y.shape))
           te_x=te_x.squeeze(1)
-          #print("te_x.shape: "+str(te_x.shape))
 
           output = model_eval(te_x, alpha=1.0)
           test_loss_task = loss_task_func(output, te_y).item()
@@ -566,7 +572,6 @@ def main():
         test_total_acc_arr=[]
         with torch.no_grad():
           for te_x, te_y in test_loader:
-            #te_x=torch.reshape(te_x, (-1, 32))
             te_y=te_y.squeeze(1)
             te_x=te_x.squeeze(1)
   
@@ -600,7 +605,7 @@ def main():
         #save to excel
    
         excel_name=alpha
-        df1.to_excel('mix_file/'+str(excel_name)+'_0513.xlsx',index=False)
+        df1.to_excel('0520/'+str(excel_name)+'_0520.xlsx',index=False)
            
         print('alpha: '+str(excel_name)+' save_scuccessful!')
         test_arg_label_arr=[]
