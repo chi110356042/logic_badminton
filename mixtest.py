@@ -391,11 +391,6 @@ def main():
        
         for batch_train_x, batch_train_y in train_loader:
 
-          #batch_train_x=torch.reshape(batch_train_x, (-1, 32))
-          #print("batch_train_x:"+str(batch_train_x))
-          #print("batch_train_y:"+str(batch_train_y))
-          #batch_train_x=batch_train_x.reshape(batch_train_x[0],32)
-          #batch_train_y = batch_train_y.unsqueeze(-1)
           if model_type.startswith('ruleonly'):
             alpha = 1.0
           elif model_type.startswith('deepctrl'):
@@ -471,13 +466,10 @@ def main():
         
         acc=sum(total_acc_arr)/len(total_acc_arr)
         acc_list.append(acc)
-        loss2=loss.item()
-        #loss2=loss.detach().numpy()
+        loss2=loss.item()  
         loss_list.append(loss2)
-        loss_task2=loss_task.item()
-        #loss_task2=loss_task.detach().numpy()
+        loss_task2=loss_task.item() 
         task_loss_list.append(loss_task2)
-        #loss_rule2=loss_rule.detach().numpy()
         loss_rule2=loss_rule.item()
         rule_loss_list.append(loss_rule2)
         n+=1
@@ -486,19 +478,9 @@ def main():
         if epoch%5==0:
           #print("loss_count: "+str(loss_count))
           print('Epoch: {} Loss: {:.6f} acc: {}'.format(epoch, loss,acc))
-          print("c_pp1:",c_pp1)
-          print("c_pp2:",c_pp2)
-          print("c_tp1:",c_tp1)
-          print("c_tp2:",c_tp2)
-
-          
-          
-          
+      
+              
           torch.save(model,saved_filename)
-
-          #print(arg_label) 
-          #print(arg_pred)
-          #print(len(total_acc_arr))
 
       print("training success")    
       
@@ -536,11 +518,7 @@ def main():
       plt.show()
 
       #test
-
       test_acc_list=[]
-      #model_eval = Net(input_dim, output_dim, rule_encoder, data_encoder, hidden_dim=hidden_dim_db, n_layers=n_layers, merge=merge)
-      #checkpoint = torch.load(saved_filename)
-      #model_eval.load_state_dict(checkpoint['model_state_dict'])
       model_eval=torch.load(saved_filename)
 
       model_eval.eval()
