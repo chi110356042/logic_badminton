@@ -251,6 +251,10 @@ def main():
       
        
         for batch_train_x, batch_train_y in train_loader:
+<<<<<<< HEAD
+=======
+
+>>>>>>> 52baf7390538d774470b3c7390191f2e228c2cee
           if model_type.startswith('ruleonly'):
             alpha = 1.0
           elif model_type.startswith('deepctrl'):
@@ -312,9 +316,15 @@ def main():
         
         acc=sum(total_acc_arr)/len(total_acc_arr)
         acc_list.append(acc)
+<<<<<<< HEAD
         loss2=loss.item()
         loss_list.append(loss2)
         loss_task2=loss_task.item()
+=======
+        loss2=loss.item()  
+        loss_list.append(loss2)
+        loss_task2=loss_task.item() 
+>>>>>>> 52baf7390538d774470b3c7390191f2e228c2cee
         task_loss_list.append(loss_task2)
         loss_rule2=loss_rule.item()
         rule_loss_list.append(loss_rule2)
@@ -323,6 +333,11 @@ def main():
       
         if epoch%5==0:
           print('Epoch: {} Loss: {:.6f} acc: {}'.format(epoch, loss,acc))
+<<<<<<< HEAD
+=======
+      
+              
+>>>>>>> 52baf7390538d774470b3c7390191f2e228c2cee
           torch.save(model,saved_filename)
 
       print("training success")    
@@ -361,7 +376,6 @@ def main():
       plt.show()
 
       #test
-
       test_acc_list=[]
       model_eval=torch.load(saved_filename)
 
