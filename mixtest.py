@@ -48,7 +48,7 @@ def main():
   parser.add_argument('--device', type=str, default='cpu')
   parser.add_argument('--batch_size', type=int, default=1, help='default: 64')
   parser.add_argument('--model_type', type=str, default='dataonly')
-  parser.add_argument('--seed', type=int, default=42) #42
+  parser.add_argument('--seed', type=int, default=5) #42
   parser.add_argument('--input_dim_encoder', type=int, default=16)
   parser.add_argument('--output_dim_encoder', type=int, default=16)
   parser.add_argument('--hidden_dim_encoder', type=int, default=128)#512
@@ -166,7 +166,7 @@ def main():
   Y_train = label_data_trans[2:-2]
   Y_test = label_test_trans[2:-2]
   print("Y_train.shape: "+str(Y_train.shape))
-  print("X_train.reshape: "+str(X_train.shape))
+  print("X_train.shape: "+str(X_train.shape))
   X_train, Y_train = torch.tensor(X_train, dtype=torch.float32, device=device), torch.tensor(Y_train, dtype=torch.float32, device=device)
   X_test, Y_test = torch.tensor(X_test, dtype=torch.float32, device=device), torch.tensor(Y_test, dtype=torch.float32, device=device)
   batch_size = args.batch_size
@@ -177,147 +177,9 @@ def main():
   print("data size: {}".format(len(X_train)))
 
 
-
-  #start
   model_type = args.model_type
-  if model_type=='dataonly':
-    print('model_type: {}'.format(model_type))
-    input_size=8
-    hidden_size=128
-    output_size=3
-    num_layers=1
-    dropout=0.3
-    bidirectional=True
-    #model=bilstm(input_size)
-    model=lstm_model(input_size,hidden_size,output_size,num_layers,dropout)
-    print(model)
-    #criterion=nn.MSELoss()
-    criterion=nn.CrossEntropyLoss()
-    optimizer=optim.Adam(model.parameters(),lr=0.005)
-    model_name='no_rule0519'
-    saved_filename = '{}.pt'.format(model_name)
-    saved_filename =  os.path.join('no_rule_model_file', saved_filename)
-
-    
-    avg_acc_arr=[]          
-    preds=[]
-    labels=[]
-    loss_list=[]
-    acc_list=[]
-    model.train()
-    for i in range(100):
-        total_acc_arr=[]
-    
-        #total_loss=0
-        for idx,(data,label) in enumerate(train_loader):
-            #print("data.shape:"+str(data.shape))
-            #print("data:"+str(data))
-            #print("label:"+str(label))
-            label=label.squeeze(1)
-            data1=data.squeeze(1) #shape(32,4,8)   (batch_size, seq_len, input_size)
-            pred=model(data1)
-            pred=pred.squeeze(1) 
-  
-            label=Variable(label)
-            #print("pred:"+str(pred))
-            #print("label:"+str(label))
-            #print("pred.shape: "+str(pred.shape)) 
-            arg_pred=torch.argmax(pred,axis=1)
-            #print("label:"+str(label))
-            #print("label.shape:"+str(label.shape))
-            arg_label=torch.argmax(label,axis=1)
-            acc_arr=torch.eq(arg_label,arg_pred).numpy().tolist()
-            total_acc_arr+=acc_arr
-            
-            optimizer.zero_grad()   
-            loss = criterion(pred, label)   
-            loss.backward()               
-            optimizer.step()            
-        
-        acc=sum(total_acc_arr)/len(total_acc_arr)
-       
-        #loss2=loss.detach().numpy()
-        loss2=loss.item()
-        loss_list.append(loss2)
-        acc_list.append(acc)
-       
-        if i%10==0:
-          print('Epoch: {} Loss: {:.6f} acc: {}'.format(i, loss,acc))
-          #print(arg_label) 
-          #print(arg_pred)
-          #print(len(total_acc_arr))
-        if i==99:
-          torch.save({
-              'epoch': i,
-              'model_state_dict':model.state_dict(),
-              'optimizer_state_dict': optimizer.state_dict(),
-              'loss': loss
-            }, saved_filename)
-
-
-    print("training success")
-    
-   
-
-    x1 = range(1,101) 
-    y1= loss_list
-    x3 = range(1,101) 
-    y3= acc_list
-
-    
-    plt.plot(x1, y1, 'o-')
-    plt.title('train_loss')
-    plt.ylabel('')
-    plt.show()
-   
-    plt.plot(x3, y3, 'o-')
-    plt.title('train_acc')
-    plt.ylabel('')
-    plt.show()
-    
-    #test
-    test_acc_list=[]
-
-    model_eval=lstm_model(input_size,hidden_size,output_size,num_layers,dropout)
-    checkpoint = torch.load(saved_filename)
-    model_eval.load_state_dict(checkpoint['model_state_dict'])
-    model_eval.eval()
-    test_total_acc_arr=[]
-    test_arg_pred_arr=[]
-    test_arg_label_arr=[]
-    with torch.no_grad():
-      for te_x, te_y in test_loader:
-        #te_y = te_y.unsqueeze(-1)
-        te_y=te_y.squeeze(1)
-        #print("te_y.shape: "+str(te_y.shape))
-        te_x=te_x.squeeze(1)
-        #print("te_x.shape: "+str(te_x.shape))
-
-        output = model_eval(te_x)
-        test_loss= criterion(output, te_y).item()
-        test_arg_pred=torch.argmax(output,axis=1)
-        test_arg_label=torch.argmax(te_y,axis=1)
-
-        test_arg_pred_arr+=test_arg_pred
-        test_arg_label_arr+=test_arg_label
-
-        test_acc_arr=torch.eq(test_arg_label,test_arg_pred).numpy().tolist()
-        test_total_acc_arr+=test_acc_arr
-        test_acc=sum(test_total_acc_arr)/len(test_total_acc_arr)
-
-    print('\n[Test] Average loss: {:.8f}  test_acc: {} \n'.format(test_loss, test_acc))
-    #print("test_arg_pred: "+str(test_arg_pred))
-    #print("test_arg_label: "+str(test_arg_label))
-    print("len(test_total_acc_arr): "+str(len(test_total_acc_arr)))
-    
-    # save result into excel
-    df1=pd.DataFrame(test_arg_pred_arr,columns=['pred'])
-    df2=pd.DataFrame(test_arg_label_arr,columns=['true'])
-    df1.to_excel('excel_file/no_rule_predict.xlsx',index=False)
-    df2.to_excel('excel_file/no_rule_true.xlsx',index=False)  
-
   #add rule
-  elif model_type=='deepctrl' :
+  if model_type=='deepctrl' :
       print('model_type: {}'.format(model_type))
       model_params = model_info[model_type]
       lr = model_params['lr'] if 'lr' in model_params else 0.001
@@ -331,8 +193,7 @@ def main():
 
 
       merge = 'cat'
-      #input_dim =32 #before
-      input_dim =4 #after
+      input_dim =4 
       output_dim_encoder = args.output_dim_encoder
       hidden_dim_encoder = args.hidden_dim_encoder
       hidden_dim_db = args.hidden_dim_db
@@ -346,8 +207,8 @@ def main():
       optimizer = optim.Adam(model.parameters(), lr=lr)        
       #loss_rule_func = lambda x,y,z: torch.mean(F.relu(x-z)+F.relu(y-z))  #let x,y do not>z 
       #loss_rule = loss_rule_func(p1, p2, score)
-      loss_rule_func = lambda x,y,a,b: torch.mean(F.relu(x-y)+F.relu(a-b)) #let x(c_pp1) do not>y(c_tp1) ,a(c_pp2) do not>b(c_tp2)
-      #loss_rule = loss_rule_func(c_pp1, c_tp1, c_pp2, c_tp2)
+      loss_rule_func = lambda x,y,a,b: torch.mean(F.relu(abs((x-y))+F.relu(abs(a-b)))) 
+      #loss_rule_func = lambda x,y,a,b: torch.mean(F.relu(x-y)+F.relu(a-b)) 
       loss_task_func=nn.CrossEntropyLoss()
   
 
@@ -365,9 +226,9 @@ def main():
       n=0 
       train_ratio=0
       
-      model_name='0522model'
+      model_name='model_name'
       saved_filename = '{}.pt'.format(model_name)
-      saved_filename =  os.path.join('0522', saved_filename)
+      saved_filename =  os.path.join('file_name', saved_filename)
  
       model.train()
       for epoch in range(1, epochs+1): 
@@ -390,24 +251,15 @@ def main():
       
        
         for batch_train_x, batch_train_y in train_loader:
-
-          #batch_train_x=torch.reshape(batch_train_x, (-1, 32))
-          #print("batch_train_x:"+str(batch_train_x))
-          #print("batch_train_y:"+str(batch_train_y))
-          #batch_train_x=batch_train_x.reshape(batch_train_x[0],32)
-          #batch_train_y = batch_train_y.unsqueeze(-1)
           if model_type.startswith('ruleonly'):
             alpha = 1.0
           elif model_type.startswith('deepctrl'):
-            #alpha = 1.0
             alpha = alpha_distribution.sample().item()
 
         
           optimizer.zero_grad()
           pred = model(batch_train_x, alpha=alpha)
-          #print("pred.shape: "+str(pred.shape))
           pred=pred.squeeze(1)    
-          #print("pred.shape: "+str(pred.shape))
           arg_pred=torch.argmax(pred,axis=1)
           arg_label=torch.argmax(batch_train_y,axis=1)
           acc_arr=torch.eq(arg_label,arg_pred).numpy().tolist()
@@ -440,29 +292,18 @@ def main():
               c_tp2+=1
           else:
             pass
-
-              #if pred_p1==pred_p2 and pred_p2>21:
-               #   pred_score+=1
-          
-          #count true p1,p2
-         
-
-          # stable output
-          #p1=torch.tensor(p1).float()
-          #p2=torch.tensor(p2).float()
-          #score=torch.tensor(score).float()
-         
+            
           c_tp1=torch.tensor(c_tp1).float()
           c_tp2=torch.tensor(c_tp2).float()
           c_pp1=torch.tensor(c_pp1).float()
           c_pp2=torch.tensor(c_pp2).float()
 
           loss_task = loss_task_func(pred, batch_train_y)
-          loss_rule = loss_rule_func(c_pp1, c_tp1, c_pp2, c_tp2)
-       
+          #loss_rule = loss_rule_func(c_pp1, c_tp1, c_pp2, c_tp2)
+          loss_rule = loss_rule_func(c_tp1, c_pp1, c_tp2, c_pp2)
           task_loss_count+=1
              
-          loss = 1 * alpha * loss_rule + (1 - alpha) * loss_task
+          loss = alpha * loss_rule + (1 - alpha) * loss_task
           loss.backward()
           optimizer.step()
           pred_cur=pred_int
@@ -472,33 +313,17 @@ def main():
         acc=sum(total_acc_arr)/len(total_acc_arr)
         acc_list.append(acc)
         loss2=loss.item()
-        #loss2=loss.detach().numpy()
         loss_list.append(loss2)
         loss_task2=loss_task.item()
-        #loss_task2=loss_task.detach().numpy()
         task_loss_list.append(loss_task2)
-        #loss_rule2=loss_rule.detach().numpy()
         loss_rule2=loss_rule.item()
         rule_loss_list.append(loss_rule2)
         n+=1
         n_list.append(n)
       
         if epoch%5==0:
-          #print("loss_count: "+str(loss_count))
           print('Epoch: {} Loss: {:.6f} acc: {}'.format(epoch, loss,acc))
-          print("c_pp1:",c_pp1)
-          print("c_pp2:",c_pp2)
-          print("c_tp1:",c_tp1)
-          print("c_tp2:",c_tp2)
-
-          
-          
-          
           torch.save(model,saved_filename)
-
-          #print(arg_label) 
-          #print(arg_pred)
-          #print(len(total_acc_arr))
 
       print("training success")    
       
@@ -538,9 +363,6 @@ def main():
       #test
 
       test_acc_list=[]
-      #model_eval = Net(input_dim, output_dim, rule_encoder, data_encoder, hidden_dim=hidden_dim_db, n_layers=n_layers, merge=merge)
-      #checkpoint = torch.load(saved_filename)
-      #model_eval.load_state_dict(checkpoint['model_state_dict'])
       model_eval=torch.load(saved_filename)
 
       model_eval.eval()
@@ -585,7 +407,6 @@ def main():
             test_loss_task = loss_task_func(output, te_y).item()
             test_arg_pred=torch.argmax(output,axis=1)
             test_arg_label=torch.argmax(te_y,axis=1)
-            #if alpha==1.0:
             test_arg_pred_arr+=test_arg_pred
             test_arg_label_arr+=test_arg_label
             df1=pd.DataFrame(test_arg_pred_arr,columns=['pred'])
@@ -605,7 +426,7 @@ def main():
         #save to excel
    
         excel_name=alpha
-        df1.to_excel('0520/'+str(excel_name)+'_0520.xlsx',index=False)
+        df1.to_excel('file_name/'+str(excel_name)+'.xlsx',index=False)
            
         print('alpha: '+str(excel_name)+' save_scuccessful!')
         test_arg_label_arr=[]
