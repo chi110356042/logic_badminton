@@ -6,8 +6,7 @@ import torch
 def create(dataset, look_back=1): 
     dataX= []
     for i in range(len(dataset)-look_back+1):
-       # for j in range(look_back):#i:(i+look_back)
-         dataX.append(dataset[i:(i+look_back), 0:8])
+         dataX.append(dataset[i:(i+look_back), 0:4])
     return np.array(dataX)
 
 
